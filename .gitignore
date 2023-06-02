@@ -1,0 +1,8 @@
+.venv
+.git
+.idea
+data
+log
+logs
+*_ex_*
+logs_generator
