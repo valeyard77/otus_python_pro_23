@@ -1,30 +1,39 @@
 import json
+import logging
 
 from string import Template
 
 
-def generate_report(data: list, report_template: str, report_filename: str, report_size: int = None) -> bool:
-    """Writes report of statistic data to file."""
-    if report_size is None:
-        report_size = len(data)
-    if report_size < len(data):
-        selected = sorted(data, key=lambda x: x['time_sum'], reverse=True)
-        data = selected[:report_size]
+class LogReport:
+    def __init__(self, data: list, report_template: str, report_filename: str, report_size: int = None):
+        self.data = data
+        self.report_template = report_template
+        self.report_filename = report_filename
+        self.report_size = report_size
 
-    # converts floats to string for better view in report
-    for d in data:
-        d['time_med'] = "%.3f" % (d['time_med'])
-        d['time_perc'] = "%.3f" % (d['time_perc'])
-        d['time_avg'] = "%.3f" % (d['time_avg'])
-        d['count_perc'] = "%.3f" % (d['count_perc'])
-        d['time_sum'] = "%.3f" % (d['time_sum'])
+    def generate_report(self) -> bool:
+        """Writes report of statistic data to file."""
+        logging.debug(f"Writes report of statistic data to file {self.report_filename}")
+        if self.report_size is None:
+            report_size = len(self.data)
+        if self.report_size < len(self.data):
+            selected = sorted(self.data, key=lambda x: x['time_sum'], reverse=True)
+            data = selected[:self.report_size]
 
-    json_data = json.dumps(data)
+        # converts floats to string for better view in report
+        for d in self.data:
+            d['time_med'] = round(d['time_med'], 3)
+            d['time_perc'] = round(d['time_perc'], 3)
+            d['time_avg'] = round(d['time_avg'], 3)
+            d['count_perc'] = round(d['count_perc'], 3)
+            d['time_sum'] = round(d['time_sum'] ,3)
 
-    with open(report_template, mode='r', encoding='utf-8') as tf:
-        template = Template(tf.read())
+        json_data = json.dumps(self.data)
 
-    with open(report_filename, mode='w', encoding='utf-8') as rf:
-        rf.write(template.safe_substitute(table_json=json_data))
+        with open(self.report_template, mode='r', encoding='utf-8') as tf:
+            template = Template(tf.read())
 
-    return True
+        with open(self.report_filename, mode='w', encoding='utf-8') as rf:
+            rf.write(template.safe_substitute(table_json=json_data))
+
+        return True
