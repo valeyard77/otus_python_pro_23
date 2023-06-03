@@ -6,3 +6,5 @@ log
 logs
 *_ex_*
 logs_generator
+github.key
+*.html
