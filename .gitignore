@@ -5,7 +5,7 @@ data
 log
 logs
 *_ex_*
-_generator
+*_generator
 github.key
 *.html
 _dev
