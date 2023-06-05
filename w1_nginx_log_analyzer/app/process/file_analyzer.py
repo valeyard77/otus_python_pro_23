@@ -1,5 +1,6 @@
 import datetime
 import gzip
+import sys
 import time
 import re
 import os
@@ -19,13 +20,25 @@ class FileDescription:
 
 class LogAnalyzer:
     def __init__(self, error_threshold: int = 40):
+        self.url_dict = {}
+        self.total_requests_time = 0.0
+        self.total_requests_count = 0
         self.last_log = FileDescription(None, datetime(MINYEAR, 1, 1))
         self.error_threshold = error_threshold
 
     def find_last_log_file(self, nginx_logs_dir: str, nginx_file_mask: str = ".*"):
         logging.debug(f"Find last log file by mask {nginx_file_mask}")
-        nginx_logs = [fn for fn in os.listdir(nginx_logs_dir) if
-                      re.fullmatch(pattern=nginx_file_mask, string=fn, flags=re.IGNORECASE) is not None]
+        try:
+            nginx_logs = [fn for fn in os.listdir(nginx_logs_dir) if
+                          re.fullmatch(pattern=nginx_file_mask, string=fn, flags=re.IGNORECASE) is not None]
+        except FileNotFoundError:
+            logging.error(f"No such file or directory {nginx_logs_dir}")
+            return None
+        except Exception as e:
+            exc = sys.exc_info()
+            logging.error(e, exc_info=exc)
+            return None
+
         for fn_log in nginx_logs:
             regex = re.search(pattern=r"log-(?P<dt>\d{8})", string=fn_log, flags=re.IGNORECASE)
             if regex is not None:
@@ -35,33 +48,18 @@ class LogAnalyzer:
 
         return self
 
-    def analyse_log_file(self) -> list:
+    def parse_log_file(self):
         """Parses log file and returns statistic data"""
         logging.debug('Parses log file and returns statistic data')
-        url_dict = {}
-        total_requests_time = 0.0
-        total_requests_count = 0
         for (request_url, request_time) in self.__parse_next_line():
-            total_requests_time += request_time
-            total_requests_count += 1
-            if request_url not in url_dict:
-                url_dict[request_url] = [request_time]
+            self.total_requests_time += request_time
+            self.total_requests_count += 1
+            if request_url not in self.url_dict:
+                self.url_dict[request_url] = [request_time]
             else:
-                url_dict[request_url].append(request_time)
+                self.url_dict[request_url].append(request_time)
 
-        stat_db = []
-        for url, request_time_list in url_dict.items():
-            val = {}
-            val['count'] = len(request_time_list)
-            val['time_sum'] = sum(request_time_list)
-            val['time_max'] = max(request_time_list)
-            val['time_avg'] = val['time_sum'] / val['count']
-            val['url'] = url
-            val['time_med'] = median(request_time_list)
-            val['time_perc'] = val['time_sum'] * 100 / total_requests_time
-            val['count_perc'] = len(request_time_list) * 100 / total_requests_count
-            stat_db.append(val)
-        return stat_db
+        return self
 
     def __parse_next_line(self) -> Union[str, float]:
         start_time = time.perf_counter()
@@ -94,4 +92,19 @@ class LogAnalyzer:
 
         failure_perc = 100 if parse_ok == 0 else parse_fail * 100 // (parse_ok + parse_fail)
         if failure_perc > self.error_threshold:
-            logging.error(f"File format error: {failure_perc}% lines wasn't parsed successfully")
+            raise SystemExit(f"File format error: {failure_perc}% lines wasn't parsed successfully")
+
+    def analyze_log_file(self) -> list:
+        stat_db = []
+        for url, request_time_list in self.url_dict.items():
+            val = {}
+            val['count'] = len(request_time_list)
+            val['time_sum'] = sum(request_time_list)
+            val['time_max'] = max(request_time_list)
+            val['time_avg'] = val['time_sum'] / val['count']
+            val['url'] = url
+            val['time_med'] = median(request_time_list)
+            val['time_perc'] = val['time_sum'] * 100 / self.total_requests_time
+            val['count_perc'] = len(request_time_list) * 100 / self.total_requests_count
+            stat_db.append(val)
+        return stat_db

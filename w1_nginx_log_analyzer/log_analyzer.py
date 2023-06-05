@@ -6,6 +6,7 @@
 #                     '$request_time';
 
 import logging
+import sys
 
 from pathlib import Path
 from app.library.config import AppConfig
@@ -28,45 +29,34 @@ def logger_init(log_level: int = logging.INFO, log_directory: str = None):
 
 
 def main():
-    # инициализируем ArgumentParser и считываем параметры из командной строки при их наличии
+    # initialize the ArgumentParser and read the parameters from the command line, if any
     args = CliParser()
 
-    # Считываем конфигурационный файл. В случае если файл передан не был, будут применены параметры по умолчанию
+    # reading the configuration file. If the file was not transferred, the default settings will be applied.
     cfg = AppConfig().load_config_file(config_file=args.config)
     if isinstance(cfg, Exception):
         logging.error(cfg)
-        exit(255)
+        sys.exit()
 
-    logger_init(log_level=logging.INFO if not args.debug else logging.DEBUG, log_directory=cfg.log_dir)
+    logger_init(log_level=logging.INFO if not args.debug else logging.DEBUG, log_directory=cfg.LOGS)
     logging.info("Nginx parser application started")
 
-    # logging.info("Find last log file by date")
-    # last_log_fn = find_last_log_file(cfg=cfg)
-    # logging.debug(f"Last log file {last_log_fn.file_path}")
-    #
-    # # checking if report file already exists for this date
-    # report_filename = os.path.join(cfg.report_dir, f"report-{last_log_fn.date.strftime('%Y.%m.%d')}.html")
-    # if os.path.exists(report_filename):
-    #     logging.info(f"File {report_filename} already exists")
-    #     exit(0)
-    #
-    # # analyzing file
-    # logging.info(f'Analysing file {last_log_fn.file_path}')
-    # statistic_db = analyse_log_file(log_name=last_log_fn.file_path, error_threshold=c.error_threshold)
-
     logging.info("Find last log file by date and analyze it")
-    lfa = LogAnalyzer(error_threshold=cfg.error_threshold). \
-        find_last_log_file(nginx_logs_dir=cfg.nginx_logs_dir, nginx_file_mask=cfg.nginx_file_mask)
+    lfa = LogAnalyzer(error_threshold=cfg.ERROR_THRESHOLD). \
+        find_last_log_file(nginx_logs_dir=cfg.LOG_DIR, nginx_file_mask=cfg.NGINX_FILE_MASK)
 
-    logging.info(f'Analysing file {lfa.last_log.file_path}')
-    statistic_db = lfa.analyse_log_file()
+    if lfa is None:
+        sys.exit()
+
+    logging.info(f"Analysing file {lfa.last_log.file_path}")
+    statistic_db = lfa.parse_log_file().analyze_log_file()
 
     # create report
-    report_filename = os.path.join(cfg.report_dir, f"report-{lfa.last_log.date.strftime('%Y.%m.%d')}.html")
+    report_filename = os.path.join(cfg.REPORT_DIR, f"report-{lfa.last_log.date.strftime('%Y.%m.%d')}.html")
     if LogReport(data=statistic_db,
-                 report_template=Path(cfg.template_dir).joinpath('report.html').__str__(),
+                 report_template=Path(cfg.TEMPLATE_DIR).joinpath('report.html').__str__(),
                  report_filename=report_filename,
-                 report_size=cfg.report_size).generate_report():
+                 report_size=cfg.REPORT_SIZE).generate_report():
         logging.info(f"Report was generated to {report_filename}")
 
 

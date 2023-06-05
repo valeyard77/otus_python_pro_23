@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 
 from string import Template
 
@@ -26,14 +27,19 @@ class LogReport:
             d['time_perc'] = round(d['time_perc'], 3)
             d['time_avg'] = round(d['time_avg'], 3)
             d['count_perc'] = round(d['count_perc'], 3)
-            d['time_sum'] = round(d['time_sum'] ,3)
+            d['time_sum'] = round(d['time_sum'], 3)
 
         json_data = json.dumps(self.data)
 
-        with open(self.report_template, mode='r', encoding='utf-8') as tf:
-            template = Template(tf.read())
+        try:
+            with open(self.report_template, mode='r', encoding='utf-8') as tf:
+                template = Template(tf.read())
 
-        with open(self.report_filename, mode='w', encoding='utf-8') as rf:
-            rf.write(template.safe_substitute(table_json=json_data))
+            with open(self.report_filename, mode='w', encoding='utf-8') as rf:
+                rf.write(template.safe_substitute(table_json=json_data))
+        except Exception as e:
+            exc = sys.exc_info()
+            logging.error(f"an error occurred while generating the report file, {e}", exc_info=exc)
+            return False
 
         return True

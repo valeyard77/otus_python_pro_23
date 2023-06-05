@@ -5,6 +5,8 @@ data
 log
 logs
 *_ex_*
-logs_generator
+_generator
 github.key
 *.html
+_dev
+__pycache__

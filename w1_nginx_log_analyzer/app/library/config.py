@@ -7,13 +7,13 @@ from typing import Union
 
 @dataclass(frozen=False)
 class AppConfig:
-    log_dir: str = None
-    report_size: int = 1000
-    report_dir: str = "./reports"
-    template_dir: str = "app/resources/templates"
-    nginx_logs_dir: str = "./data"
-    error_threshold: int = 40
-    nginx_file_mask: str = r"nginx-access-ui\.log-(?P<date>\d{8})(\.gz)?$"
+    LOGS: str = None
+    REPORT_SIZE: int = 1000
+    REPORT_DIR: str = "./reports"
+    TEMPLATE_DIR: str = "app/resources/templates"
+    LOG_DIR: str = "./data"
+    ERROR_THRESHOLD: int = 40
+    NGINX_FILE_MASK: str = r"nginx-access-ui\.log-(?P<date>\d{8})(\.gz)?$"
 
     def load_config_file(self, config_file: str = None):
         if config_file is None:
