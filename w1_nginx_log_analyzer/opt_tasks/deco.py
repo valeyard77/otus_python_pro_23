@@ -8,13 +8,13 @@ def disable(func):
     """
     Disable a decorator by re-assigning the decorator's name
     to this function. For example, to turn off memoization:
-    >>> memo = disable
+    memo = disable
     """
 
-    def wrapper(*args, **kwargs):
+    def disable_wrapper(*args, **kwargs):
         return func(*args, **kwargs)
 
-    return update_wrapper(wrapper, func)
+    return decorator(disable_wrapper, func)
 
 
 def decorator(deco, func):
@@ -22,21 +22,24 @@ def decorator(deco, func):
     Decorate a decorator so that it inherits the docstrings
     and stuff from the function it's decorating.
     """
-    ret = update_wrapper(deco, func)
-    if hasattr(func, 'calls'):
-        ret.calls = func.calls
-    return ret
+    r = update_wrapper(deco, func)
+    return r
 
 
 def countcalls(func):
     """Decorator that counts calls made to the function decorated."""
 
-    def countcalls_wrapper(*args, **kwargs):
-        countcalls_wrapper.calls[0] += 1
+    ## не получается сделать без дополнительного элемента. листа, dict, без разницы
+    ## если декоратор memo стоит первым в вызове(и соотвествено инициализируется на уровне вызова import скрипта),
+    # то мы получаем значение, которое будет стоять в корне верхнеуровневой функции countcalls, например count_wrapper.calls = 1
+    #
+
+    def count_wrapper(*args, **kwargs):
+        count_wrapper.calls['count'] += 1
         return func(*args, **kwargs)
 
-    countcalls_wrapper.calls = [0]
-    return decorator(countcalls_wrapper, func)
+    count_wrapper.calls = {"count": 1}
+    return decorator(count_wrapper, func)
 
 
 def memo(func):
@@ -46,17 +49,16 @@ def memo(func):
     """
 
     def memo_wrapper(*args, **kwargs):
-        print(args)
-        print(memo_wrapper.mem)
         if args in memo_wrapper.mem:
-            print('recover from memo[', args, ']=', memo_wrapper.mem[args])
+            print(f" <- recover from memo['{args}'] = {memo_wrapper.mem[args]}")
             return memo_wrapper.mem[args]
         else:
-            memo_wrapper.mem[args] = func(*args, **kwargs)
-            print('save to memo[',args,']=', memo_wrapper.mem[args])
-            return memo_wrapper.mem[args]
+            r = func(*args, **kwargs)
+            memo_wrapper.mem[args] = r
+            print(f" -> save to memo['{args}'] = {memo_wrapper.mem[args]}")
+            return r
 
-    memo_wrapper.mem = dict()
+    memo_wrapper.mem = {}
     return decorator(memo_wrapper, func)
 
 
@@ -83,7 +85,7 @@ def trace(trace_symbols):
     def fib(n):
         ....
 
-    >>> fib(3)
+    fib(3)
      --> fib(3)
     ____ --> fib(2)
     ________ --> fib(1)
@@ -98,16 +100,16 @@ def trace(trace_symbols):
     """
 
     def decorate(func):
-        def wrapper(*args):
-            print(trace_symbols * wrapper.count, ' --> ', func.__name__, '(', *args, ')', sep='')
-            wrapper.count += 1
-            res = func(*args)
-            wrapper.count -= 1
-            print(trace_symbols * wrapper.count, ' <-- ', func.__name__, '(', *args, ')', ' == ', res, sep='')
-            return res
+        def trace_wrapper(*args):
+            print(trace_symbols * trace_wrapper.count, ' --> ', func.__name__, '(', *args, ')', sep='')
+            trace_wrapper.count += 1
+            r = func(*args)
+            trace_wrapper.count -= 1
+            print(trace_symbols * trace_wrapper.count, ' <-- ', func.__name__, '(', *args, ')', ' == ', r, sep='')
+            return r
 
-        wrapper.count = 0
-        return decorator(wrapper, func)
+        trace_wrapper.count = 0
+        return decorator(trace_wrapper, func)
 
     return decorate
 
@@ -129,7 +131,7 @@ def bar(a, b):
 
 
 @countcalls
-@trace("####")
+@trace("---")
 @memo
 def fib(n):
     """Some doc"""
@@ -137,16 +139,25 @@ def fib(n):
 
 
 def main():
+    print('=================FOO==================')
+    print('=====@memo, @countcalls, @n_ary=======')
+    print('======================================')
     print(foo(4, 3))
     print(foo(4, 3, 2))
     print(foo(4, 3))
     print("foo was called", foo.calls, "times")
 
+    # print('===============BAR====================')
+    # print('=====@countcalls, @memo , @n_ary======')
+    # print('======================================')
     # print(bar(4, 3))
     # print(bar(4, 3, 2))
     # print(bar(4, 3, 2, 1))
     # print("bar was called", bar.calls, "times")
-    #
+
+    # print('=================FIB==================')
+    # print('=====@countcalls, @trace, @memo=======')
+    # print('======================================')
     # print(fib.__doc__)
     # fib(3)
     # print(fib.calls, 'calls made')
