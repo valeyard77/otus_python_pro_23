@@ -1,0 +1,12 @@
+.venv
+.git
+.idea
+data
+log
+logs
+*_ex_*
+logs_generator.py
+github.key
+*.html
+_dev
+__pycache__
