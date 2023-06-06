@@ -49,7 +49,8 @@ _report-YYYY.MM.DD.html_, который помещается в папку `REP
 4.2 Для запуска программы выполнить команду  
 _`>>> python log_analyzer.py`_   
 или _`>>> python log_analyzer.py --config==’путь к файлу конфигурации’`_
-`python ./log_analyzer.py --help` - вывод помощи
+
+_`>>>python ./log_analyzer.py --help`_ - вывод помощи
 
 ## 5 Запуск тестов
 5.1 Для программы разработана система тестов на базе unittest (директория ./tests).
