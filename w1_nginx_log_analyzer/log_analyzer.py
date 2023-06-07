@@ -48,11 +48,16 @@ def main():
     if lfa is None:
         sys.exit()
 
+    report_filename = os.path.join(cfg.REPORT_DIR, f"report-{lfa.last_log.date.strftime('%Y.%m.%d')}.html")
+    # Check if the report file has been created
+    if Path(report_filename).exists():
+        logging.info(f"Last log report {Path(report_filename).name} already exists. Exiting")
+        sys.exit(0)
+
     logging.info(f"Analysing file {lfa.last_log.file_path}")
     statistic_db = lfa.parse_log_file().analyze_log_file()
 
     # create report
-    report_filename = os.path.join(cfg.REPORT_DIR, f"report-{lfa.last_log.date.strftime('%Y.%m.%d')}.html")
     if LogReport(data=statistic_db,
                  report_template=Path(cfg.TEMPLATE_DIR).joinpath('report.html').__str__(),
                  report_filename=report_filename,
