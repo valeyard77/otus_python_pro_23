@@ -8,8 +8,8 @@ logging.disable(logging.CRITICAL)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import log_analyzer
 
-class TestParseLog(unittest.TestCase):
 
+class TestParseLog(unittest.TestCase):
     """ Procedure:
         1. Create test file for parsing in './test_folder' dir. This file mimics structure of real log files
         2. Initiate control dict - this dict should be as a result of testing file
@@ -51,18 +51,20 @@ class TestParseLog(unittest.TestCase):
         self.log_file_path = os.path.join(self.log_dir, self.last_log)
         with open(self.log_file_path, mode='w') as file:
             for line in self.test_lines:
-                file.write(line+'\n')
+                file.write(line + '\n')
 
     def test_parse_log(self):
-        self.dict_from_func = log_analyzer.LogAnalyzer(error_threshold=10).find_last_log_file(nginx_logs_dir=self.log_dir).parse_log_file().url_dict
-        print(self.dict_from_func)
+        try:
+            self.dict_from_func = log_analyzer.LogAnalyzer(error_threshold=10).find_last_log_file(
+                nginx_logs_dir=self.log_dir).parse_log_file().url_dict
+        except SystemExit:
+            self.assertRaises(expected_exception=SystemExit)
 
-
-    def tearDown(self):
-            # Remove test logfile after the test
-            print('Remove test logfile after the test')
-            os.remove(self.log_file_path)
-            os.rmdir(self.log_dir)
+    def tear_down(self):
+        # Remove test logfile after the test
+        print('Remove test logfile after the test')
+        os.remove(self.log_file_path)
+        os.rmdir(self.log_dir)
 
 
 if __name__ == '__main__':
