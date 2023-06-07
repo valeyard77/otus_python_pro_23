@@ -48,10 +48,10 @@ class TestParseLog(unittest.TestCase):
         self.assertDictEqual(self.control_dict, self.dict_from_func)
 
     def tearDown(self):
-            # Remove test logfile after the test
-            print('Remove test logfile after the test')
-            os.remove(self.log_file_path)
-            os.rmdir(self.log_dir)
+        # Remove test logfile after the test
+        print('Remove test logfile after the test')
+        os.remove(self.log_file_path)
+        os.rmdir(self.log_dir)
 
 
 if __name__ == '__main__':

@@ -60,7 +60,7 @@ class TestParseLog(unittest.TestCase):
         except SystemExit:
             self.assertRaises(expected_exception=SystemExit)
 
-    def tear_down(self):
+    def tearDown(self):
         # Remove test logfile after the test
         print('Remove test logfile after the test')
         os.remove(self.log_file_path)
