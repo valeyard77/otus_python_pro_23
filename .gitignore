@@ -2,7 +2,7 @@
 .git
 .idea
 data
-log
+*.log.*
 logs
 *_ex_*
 logs_generator.py
