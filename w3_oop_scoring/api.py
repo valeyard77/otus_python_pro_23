@@ -16,6 +16,7 @@ FORBIDDEN = 403
 NOT_FOUND = 404
 INVALID_REQUEST = 422
 INTERNAL_ERROR = 500
+MAX_AGE = 70
 ERRORS = {
     BAD_REQUEST: "Bad Request",
     FORBIDDEN: "Forbidden",
@@ -126,8 +127,8 @@ class BirthDayField(DateField):
         super().run_validator(value)
         today = datetime.date.today()
         delta = today - value
-        if delta.days / 365.25 > 70:
-            raise ValueError("No more than 70 years must have elapsed from the date of birth")
+        if delta.days / 365.25 > MAX_AGE:
+            raise ValueError(f"No more than {MAX_AGE} years must have elapsed from the date of birth")
 
 
 class GenderField(Field):
