@@ -5,7 +5,10 @@ import hashlib
 import uuid
 from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from dateutil.relativedelta import relativedelta
+
 from scoring import get_score, get_interests
+from store import Store
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
@@ -17,6 +20,8 @@ NOT_FOUND = 404
 INVALID_REQUEST = 422
 INTERNAL_ERROR = 500
 MAX_AGE = 70
+STORE_KEY_EXPIRE = 3600
+STORE_HOST = "192.168.1.4"
 ERRORS = {
     BAD_REQUEST: "Bad Request",
     FORBIDDEN: "Forbidden",
@@ -126,8 +131,10 @@ class BirthDayField(DateField):
     def run_validator(self, value):
         super().run_validator(value)
         today = datetime.date.today()
-        delta = today - value
-        if delta.days / 365.25 > MAX_AGE:
+        date = datetime.datetime.strptime(value, '%d.%m.%Y')
+        years_diff = relativedelta(today, date).years
+
+        if years_diff > MAX_AGE:
             raise ValueError(f"No more than {MAX_AGE} years must have elapsed from the date of birth")
 
 
@@ -302,7 +309,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = None
+    store = Store(host=STORE_HOST, key_expire=STORE_KEY_EXPIRE)
 
     def do_POST(self):
         response, code = {}, OK
