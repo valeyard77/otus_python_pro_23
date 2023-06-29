@@ -22,6 +22,7 @@ INTERNAL_ERROR = 500
 MAX_AGE = 70
 STORE_KEY_EXPIRE = 3600
 STORE_HOST = "192.168.1.4"
+STORE_DB = 4
 ERRORS = {
     BAD_REQUEST: "Bad Request",
     FORBIDDEN: "Forbidden",
@@ -131,8 +132,7 @@ class BirthDayField(DateField):
     def run_validator(self, value):
         super().run_validator(value)
         today = datetime.date.today()
-        date = datetime.datetime.strptime(value, '%d.%m.%Y')
-        years_diff = relativedelta(today, date).years
+        years_diff = relativedelta(today, value).years
 
         if years_diff > MAX_AGE:
             raise ValueError(f"No more than {MAX_AGE} years must have elapsed from the date of birth")
@@ -309,7 +309,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = Store(host=STORE_HOST, key_expire=STORE_KEY_EXPIRE)
+    store = Store(host=STORE_HOST, db=STORE_DB, key_expire=STORE_KEY_EXPIRE)
 
     def do_POST(self):
         response, code = {}, OK

@@ -9,7 +9,7 @@ def get_score(store, phone, email, birthday=None, gender=None, first_name=None, 
         first_name or "",
         last_name or "",
         str(phone) or "",
-        datetime.datetime.strftime(birthday, "%Y-%m-%d") or ""
+        datetime.datetime.strftime(birthday, "%m.%d.%Y") if birthday is not None else ""
     ]
     key = "score:" + hashlib.md5(("".join(key_parts)).encode()).hexdigest()
 
@@ -38,8 +38,13 @@ def get_score(store, phone, email, birthday=None, gender=None, first_name=None, 
 
 
 def get_interests(store, cid):
-    r = store.get(f"inter:{cid}")
-    return json.loads(r) if r else [f"can not get information on the key {cid} from storage"]
+    if not store.is_connected:
+        raise Exception("can not connect to storage db")
+    try:
+        r = store.get(f"inter:{cid}").decode("UTF-8")
+        return [r] if r else [f"can not get information on the key {cid} from storage"]
+    except AttributeError:
+        return [f"can not get information on the key {cid} from storage"]
 
 
 # def get_interests(store, cid):

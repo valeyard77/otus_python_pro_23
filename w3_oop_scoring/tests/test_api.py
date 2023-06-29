@@ -1,11 +1,16 @@
-import sys
-import os
 import hashlib
 import datetime
 import functools
 import unittest
+import fakeredis
 
+from unittest.mock import patch
+
+import sys
+import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import store
 import api
 
 
@@ -21,10 +26,11 @@ def cases(cases):
 
 
 class TestSuite(unittest.TestCase):
+    @patch("redis.StrictRedis", fakeredis.FakeStrictRedis)
     def setUp(self):
         self.context = {}
         self.headers = {}
-        self.settings = {}
+        self.settings = store.Store()
 
     def get_response(self, request):
         return api.method_handler({"body": request, "headers": self.headers}, self.context, self.settings)
@@ -34,7 +40,7 @@ class TestSuite(unittest.TestCase):
             request["token"] = hashlib.sha512(bytes(datetime.datetime.now().strftime("%Y%m%d%H") + api.ADMIN_SALT, "utf-8")).hexdigest()
         else:
             msg = request.get("account", "") + request.get("login", "") + api.SALT
-            request["token"] = hashlib.sha512(bytes(msg, 'utf-8')).hexdigest()
+            request["token"] = hashlib.sha512(bytes(msg, "utf-8")).hexdigest()
 
     def test_empty_request(self):
         _, code = self.get_response({})
@@ -136,7 +142,7 @@ class TestSuite(unittest.TestCase):
         response, code = self.get_response(request)
         self.assertEqual(api.OK, code, arguments)
         self.assertEqual(len(arguments["client_ids"]), len(response))
-        self.assertTrue(all(v and isinstance(v, list) and all(isinstance(i, (bytes, str)) for i in v)
+        self.assertTrue(all(v and isinstance(v, list) and all(isinstance(i, str) for i in v)
                         for v in response.values()))
         self.assertEqual(self.context.get("nclients"), len(arguments["client_ids"]))
 
