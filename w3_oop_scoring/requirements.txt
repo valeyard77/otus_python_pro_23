@@ -1,3 +1,7 @@
 dateutils==0.6.12
 fakeredis==2.15.0
+mock==5.0.2
+pytest==7.4.0
 redis==4.6.0
+requests==2.31.0
+
