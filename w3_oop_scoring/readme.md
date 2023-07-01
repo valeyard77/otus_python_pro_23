@@ -82,3 +82,13 @@ $ curl -X POST -H "Content-Type: application/json" -d '{"account": "horns&hoofs"
 Для запуска скрипта необходимо выполнить команду python api.py из корневой директории
 <pre>python api.py</pre>
 
+**Запуск тестов**
+
+#### Запуск модульных тестов:
+<pre>python -m unittest discover -s w3_oop_scoring/tests/unit -v</pre>
+
+#### Запуск интеграционных теста:
+<pre>python -m unittest discover -s w3_oop_scoring/tests/integration -v</pre>
+
+#### Запуск всех тестов:
+<pre>python -m unittest discover -s w3_oop_scoring/tests/ -v</pre>
