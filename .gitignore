@@ -12,5 +12,4 @@ _dev
 __pycache__
 .pytest*
 tests_old
-w4_web_server
 w3_oop_scoring/tests/functional
