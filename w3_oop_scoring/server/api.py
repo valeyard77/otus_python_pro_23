@@ -7,8 +7,8 @@ from optparse import OptionParser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dateutil.relativedelta import relativedelta
 
-from scoring import get_score, get_interests
-from store import Store
+from w3_oop_scoring.server.scoring import get_score, get_interests
+from w3_oop_scoring.server.store import Store
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"

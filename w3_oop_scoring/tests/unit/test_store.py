@@ -1,13 +1,9 @@
+import time
 import unittest
 from unittest.mock import patch
 import fakeredis
 
-import sys
-import os
-import time
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import store
+from w3_oop_scoring.server import store
 
 
 class RedisStoreTestSuite(unittest.TestCase):

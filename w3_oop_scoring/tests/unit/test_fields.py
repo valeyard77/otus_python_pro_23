@@ -2,22 +2,8 @@ import unittest
 import functools
 import datetime as dt
 
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import api
-
-
-def cases(cases):
-    def decorator(f):
-        @functools.wraps(f)
-        def wrapper(*args):
-            for c in cases:
-                new_args = args + (c if isinstance(c, tuple) else (c,))
-                f(*new_args)
-        return wrapper
-    return decorator
+from w3_oop_scoring.server import api
+from w3_oop_scoring.tests.cases import cases
 
 
 class TestCharField(unittest.TestCase):
