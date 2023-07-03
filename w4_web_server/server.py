@@ -6,7 +6,7 @@ import datetime
 import urllib.parse
 
 
-class HttpServer(object):
+class HttpServer:
     """ Base HTTP Server """
 
     HOST = 'localhost'
@@ -114,14 +114,14 @@ class HttpServer(object):
         format = supposed_format if supposed_format in self.CONTENT_TYPES.keys() else 'html'
         content_type = self.CONTENT_TYPES.get(format, 'text/html')
         file_size = os.path.getsize(filepath)
-        file_data = open(filepath, 'rb')
-        content = file_data.read().decode("utf-8") if content_type == "text/html" else file_data.read()
-        response = self._response_data(
-            status=200, status_text='OK',
-            content_type=content_type, content_length=file_size,
-            content=content, request_info=request
-        )
-        file_data.close()
+
+        with open(filepath, 'rb') as file_data:
+            content = file_data.read().decode("utf-8") if content_type == "text/html" else file_data.read()
+            response = self._response_data(
+                status=200, status_text='OK',
+                content_type=content_type, content_length=file_size,
+                content=content, request_info=request
+            )
         return response
 
     def _404_response(self, message):
@@ -167,6 +167,8 @@ class HttpServer(object):
     def _response_data(self, **kwargs):
         """ Base response method """
 
+        content = kwargs.get('content', None)
+
         request_info = kwargs.get('request_info', {})
         date = str(datetime.datetime.now())
         response = f"HTTP/1.1 {kwargs.get('status', None)} {kwargs.get('status_text', None)}\r\n"
@@ -176,7 +178,12 @@ class HttpServer(object):
         response += f"Date: {date}\r\n"
         response += "Server: my-server\r\n"
         response += "Connection: close\r\n\r\n"
-        if request_info.get('request', None) != 'HEAD':
-            response += f"{kwargs.get('content', None)}"
+        # if request_info.get('request', None) != 'HEAD':
+        #     response += f"{kwargs.get('content', None)}"
 
-        return response.encode("utf-8")
+        if request_info.get('request', None) != 'HEAD':
+            response_bytes = response.encode("UTF-8") + (content if isinstance(content, bytes) else content.encode("UTF-8"))
+        else:
+            response_bytes = response.encode("UTF-8")
+
+        return response_bytes
