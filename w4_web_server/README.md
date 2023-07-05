@@ -23,7 +23,7 @@ Implement a Web server
 ## Testing ##
 * `httptest` folder from `http-test-suite` repository should be copied into `DOCUMENT_ROOT`
 * Lowest-latency response (tested using `hey`, analog ApacheBench on ArchLinux) in the following fashion: 
-<pre>hey -n 30000 -c 100 -m GET http://localhost:8000</pre>pre>
+<pre>hey -n 30000 -c 100 -m GET http://localhost:8000</pre>
 #### _**Test result on screenshot below**_
 ![](http_perf_test_result.png)
 
