@@ -1,8 +1,7 @@
 Web server test suite
 =====================
 
-Implement a Web server
-The implementation uses a module from the Python standard library <i>multiprocessing</i>.<br>
+Implement of a simple Web server. The implementation uses a module from the Python standard library <i>multiprocessing</i>.<br>
 In multiprocessing, processes are spawned by creating a Process object and then calling its `start()` method.<br>
 The server can be started with the following options:
 
