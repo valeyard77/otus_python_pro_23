@@ -108,7 +108,6 @@ class HttpServer:
             return self._http_status_response(status_code=500, content=e)
 
     def _http_status_response(self, status_code=200, content=None, request=None, filepath=None):
-        file_size = 0
         status_text = {
             200: "OK", 400: "Bad Request",
             404: "Not found", 405: "Method Not Allowed",
