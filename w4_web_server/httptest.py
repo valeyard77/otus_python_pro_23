@@ -47,7 +47,7 @@ class HttpServer(unittest.TestCase):
         self.conn.request("GET", "/httptest/dir1/")
         r = self.conn.getresponse()
         data = r.read()
-        self.assertEqual(int(r.status), 403)
+        self.assertEqual(int(r.status), 503)
 
     def test_file_not_found(self):
         """absent file returns 404"""
