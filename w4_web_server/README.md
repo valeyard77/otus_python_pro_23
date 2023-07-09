@@ -2,6 +2,17 @@ Web server test suite
 =====================
 
 Implement a Web server
+The implementation uses a module from the Python standard library <i>multiprocessing</i>.<br>
+In multiprocessing, processes are spawned by creating a Process object and then calling its `start()` method.<br>
+The server can be started with the following options:
+
+| Key            | Description                                       |
+|----------------|---------------------------------------------------|
+| --workers/-w   | number of workers (default 3)                     |
+| --root_path/-r | DOCUMENT_ROOT (default current directory)         |
+| --logfile      | log file name (standard output stream by default) |
+| -X             | enable debug mode                                 |
+
 
 ## Requirements ##
 
@@ -22,7 +33,7 @@ Implement a Web server
 
 ## Testing ##
 * `httptest` folder from `http-test-suite` repository should be copied into `DOCUMENT_ROOT`
-* Lowest-latency response (tested using `hey`, similar ApacheBench on ArchLinux) in the following fashion: 
+* Lowest-latency response (tested using `hey`, similar ApacheBench on ArchLinux) in the following command: 
 <pre>hey -n 30000 -c 100 -m GET http://localhost:8000</pre>
 #### _**Test result on screenshot below**_
 ![](http_perf_test_result.png)

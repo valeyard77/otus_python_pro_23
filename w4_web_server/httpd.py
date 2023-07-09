@@ -16,7 +16,7 @@ def start_server(root_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simple asynchronous web-server')
-    parser.add_argument('--workers', '-w', type=int, help='Number of workers', default=4)
+    parser.add_argument('--workers', '-w', type=int, help='Number of workers', default=3)
     parser.add_argument('--root_path', '-r', type=str, help='Root path of the documents')
     parser.add_argument("--logfile", dest="logfile", default=None)
     parser.add_argument("-X", "--debug", action="store_true", default=False, help="Enable debug mode")
