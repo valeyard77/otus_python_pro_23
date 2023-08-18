@@ -1,7 +1,7 @@
 .venv
 .git
 .idea
-data
+w1_nginx_log_analyzer/data
 *.log.*
 logs
 *_ex_*
