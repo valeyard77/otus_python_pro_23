@@ -171,12 +171,11 @@ def handle_logfile(fn, options):
 
 def main(options):
     num_processes = multiprocessing.cpu_count() - 1
-    pool = multiprocessing.Pool(processes=num_processes)
-    fnames = sorted(fn for fn in glob.iglob(options.pattern))
-    handler = partial(handle_logfile, options=options)
-    for fn in pool.imap(handler, fnames):
-        pass
-        # dot_rename(fn)
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        fnames = sorted(fn for fn in glob.iglob(options.pattern))
+        handler = partial(handle_logfile, options=options)
+        for fn in pool.imap(handler, fnames):
+            dot_rename(fn)
 
 
 def prototest():
