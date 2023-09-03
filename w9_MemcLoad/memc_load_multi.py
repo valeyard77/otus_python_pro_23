@@ -13,12 +13,11 @@ import collections
 from optparse import OptionParser
 import appsinstalled_pb2
 import memcache
-import threading
+from threading import Thread
 from queue import Queue, Empty
 import multiprocessing
 from functools import partial
 import time
-
 
 NORMAL_ERR_RATE = 0.01
 AppsInstalled = collections.namedtuple("AppsInstalled", ["dev_type", "dev_id", "lat", "lon", "apps"])
@@ -27,6 +26,7 @@ config = {
     'MEMC_TIMEOUT': 3,
     'MAX_JOB_QUEUE_SIZE': 0,
     'MAX_RESULT_QUEUE_SIZE': 0,
+    'MAX_DATA_SIZE': 5,
     'THREADS_PER_WORKER': 4,
     'MEMC_BACKOFF_FACTOR': 0.3
 }
@@ -42,7 +42,7 @@ def insert_appsinstalled(memc_pool, memc_addr, appsinstalled, dry_run=False):
     ua = appsinstalled_pb2.UserApps()
     ua.lat = appsinstalled.lat
     ua.lon = appsinstalled.lon
-    key = "%s:%s" % (appsinstalled.dev_type, appsinstalled.dev_id)
+    key = f"%s:%s" % (appsinstalled.dev_type, appsinstalled.dev_id)
     ua.apps.extend(appsinstalled.apps)
     packed = ua.SerializeToString()
     try:
@@ -55,7 +55,7 @@ def insert_appsinstalled(memc_pool, memc_addr, appsinstalled, dry_run=False):
                 memc = memcache.Client([memc_addr], socket_timeout=config['MEMC_TIMEOUT'])
             ok = False
             for n in range(config['MEMC_MAX_RETRIES']):
-                ok = memc.set(key, packed)
+                ok = memc.set_multi(key, packed)
                 if ok:
                     break
                 backoff_value = config['MEMC_BACKOFF_FACTOR'] * (2 ** n)
@@ -104,6 +104,23 @@ def handle_task(job_queue, result_queue):
             errors += 1
 
 
+def parsing_file(filename: str):
+    for line in parse_next_line(filename=filename):
+        appsinstalled = parse_appsinstalled(line)
+        print(appsinstalled)
+
+    return []
+
+
+def parse_next_line(filename: str):
+    with gzip.open(filename) as fd:
+        for line in fd:
+            line = line.strip().decode("UTF-8")
+            if line.find('tsv') != -1 or not line:
+                continue
+            yield line
+
+
 def handle_logfile(fn, options):
     device_memc = {
         "idfa": options.idfa,
@@ -118,7 +135,7 @@ def handle_logfile(fn, options):
 
     workers = []
     for i in range(config['THREADS_PER_WORKER']):
-        thread = threading.Thread(target=handle_task, args=(job_queue, result_queue))
+        thread = Thread(target=handle_task, args=(job_queue, result_queue))
         thread.daemon = True
         workers.append(thread)
 
@@ -128,27 +145,26 @@ def handle_logfile(fn, options):
     processed = errors = 0
     logging.info(f'Processing {fn}')
 
-    with gzip.open(fn) as fd:
-        for line in fd:
-            line = line.strip().decode("UTF-8")
-            if line.find('tsv') != -1 or not line:
-                continue
+    appsinstalled = parsing_file(filename=fn)
 
-            appsinstalled = parse_appsinstalled(line)
-            if not appsinstalled:
-                errors += 1
-                continue
+    # for app in appsinstalled:
+    #     print(app, appsinstalled[app])
 
-            memc_addr = device_memc.get(appsinstalled.dev_type)
-            if not memc_addr:
-                errors += 1
-                logging.error(f"Unknown device type: {appsinstalled.dev_type}")
-                continue
-
-            job_queue.put((pools[memc_addr], memc_addr, appsinstalled, options.dry))
-
-            if not all(thread.is_alive() for thread in workers):
-                break
+        # if not appsinstalled:
+        #     errors += 1
+        #     continue
+        #
+        # memc_addr = device_memc.get(appsinstalled.dev_type)
+        # if not memc_addr:
+        #     errors += 1
+        #     logging.error(f"Unknown device type: {appsinstalled.dev_type}")
+        #     continue
+        #
+        # print(memc_addr, appsinstalled, options.dry)
+        # job_queue.put((pools[memc_addr], memc_addr, appsinstalled, options.dry))
+        #
+        # if not all(thread.is_alive() for thread in workers):
+        #     break
 
     for thread in workers:
         if thread.is_alive():
@@ -175,7 +191,8 @@ def main(options):
         fnames = sorted(fn for fn in glob.iglob(options.pattern))
         handler = partial(handle_logfile, options=options)
         for fn in pool.imap(handler, fnames):
-            dot_rename(fn)
+            # dot_rename(fn)
+            pass
 
 
 def prototest():
