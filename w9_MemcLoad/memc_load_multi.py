@@ -104,12 +104,45 @@ def handle_task(job_queue, result_queue):
             errors += 1
 
 
-def parsing_file(filename: str):
-    for line in parse_next_line(filename=filename):
-        appsinstalled = parse_appsinstalled(line)
-        print(appsinstalled)
+def parsing_file(filename: str, options):
+    appsinstalled = []
+    apps_inner = []
+    errors = 0
+    index = 0
+    inner_count = 0
 
-    return []
+    device_memc = {
+        "idfa": options.idfa,
+        "gaid": options.gaid,
+        "adid": options.adid,
+        "dvid": options.dvid,
+    }
+
+    for line in parse_next_line(filename=filename):
+        apps = parse_appsinstalled(line)
+        if not apps:
+            errors += 1
+            continue
+
+        memc_addr = device_memc.get(apps.dev_type)
+        if not memc_addr:
+            errors += 1
+            logging.error(f"Unknown device type: {apps.dev_type}")
+            continue
+
+        # index: memc_addr: [appsinstalled, ] <= MAX_DATA_SIZE
+        apps_inner.append(apps)
+        inner_count += 1
+        if inner_count > config['MAX_DATA_SIZE']:
+            appsinstalled.append(add_appsinstalled_struct(index, memc_addr, apps_inner))
+            inner_count = 0
+            apps_inner = []
+            index += 1
+
+    if apps_inner:
+        appsinstalled.append(add_appsinstalled_struct(index, memc_addr, apps_inner))
+
+    return appsinstalled, errors
 
 
 def parse_next_line(filename: str):
@@ -121,14 +154,11 @@ def parse_next_line(filename: str):
             yield line
 
 
-def handle_logfile(fn, options):
-    device_memc = {
-        "idfa": options.idfa,
-        "gaid": options.gaid,
-        "adid": options.adid,
-        "dvid": options.dvid,
-    }
+def add_appsinstalled_struct(index, memc_addr, appsinstalled):
+    return {index: {memc_addr: appsinstalled}}
 
+
+def handle_logfile(fn, options):
     pools = collections.defaultdict(Queue)
     job_queue = Queue(maxsize=config['MAX_JOB_QUEUE_SIZE'])
     result_queue = Queue(maxsize=config['MAX_RESULT_QUEUE_SIZE'])
@@ -142,30 +172,19 @@ def handle_logfile(fn, options):
     for thread in workers:
         thread.start()
 
-    processed = errors = 0
+    processed = 0
     logging.info(f'Processing {fn}')
 
-    appsinstalled = parsing_file(filename=fn)
+    appsinstalled_struct, errors = parsing_file(filename=fn, options=options)
 
-    # for app in appsinstalled:
-    #     print(app, appsinstalled[app])
-
-        # if not appsinstalled:
-        #     errors += 1
-        #     continue
-        #
-        # memc_addr = device_memc.get(appsinstalled.dev_type)
-        # if not memc_addr:
-        #     errors += 1
-        #     logging.error(f"Unknown device type: {appsinstalled.dev_type}")
-        #     continue
-        #
-        # print(memc_addr, appsinstalled, options.dry)
+    for idx, appsinstalled in enumerate(appsinstalled_struct):
+        print(list(appsinstalled[idx].keys())[0])
         # job_queue.put((pools[memc_addr], memc_addr, appsinstalled, options.dry))
-        #
-        # if not all(thread.is_alive() for thread in workers):
-        #     break
 
+        if not all(thread.is_alive() for thread in workers):
+          break
+
+    exit()
     for thread in workers:
         if thread.is_alive():
             thread.join()
