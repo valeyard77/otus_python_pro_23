@@ -26,7 +26,7 @@ config = {
     'MEMC_TIMEOUT': 3,
     'MAX_JOB_QUEUE_SIZE': 0,
     'MAX_RESULT_QUEUE_SIZE': 0,
-    'MAX_DATA_SIZE': 5,
+    'MAX_DATA_SIZE': 3,
     'THREADS_PER_WORKER': 4,
     'MEMC_BACKOFF_FACTOR': 0.3
 }
@@ -38,12 +38,18 @@ def dot_rename(path):
     os.rename(path, os.path.join(head, "." + fn))
 
 
-def insert_appsinstalled(memc_pool, memc_addr, appsinstalled, dry_run=False):
+def insert_appsinstalled(pools, appsinstalled, dry_run=False):
     ua = appsinstalled_pb2.UserApps()
+    memc_addr = list(appsinstalled.keys())[0]
+    memc_pool = pools[memc_addr]
+
+    key = f"%s:%s" % (appsinstalled[memc_addr][0].dev_type, appsinstalled[memc_addr][0].dev_id)
+    print(memc_addr, key)
+    return None
     ua.lat = appsinstalled.lat
     ua.lon = appsinstalled.lon
-    key = f"%s:%s" % (appsinstalled.dev_type, appsinstalled.dev_id)
     ua.apps.extend(appsinstalled.apps)
+    key = f"%s:%s" % (appsinstalled[memc_addr].dev_type, appsinstalled[memc_addr].dev_id)
     packed = ua.SerializeToString()
     try:
         if dry_run:
@@ -96,8 +102,9 @@ def handle_task(job_queue, result_queue):
             result_queue.put((processed, errors))
             return
 
-        memc_pool, memc_addr, appsinstalled, dry_run = task
-        ok = insert_appsinstalled(memc_pool, memc_addr, appsinstalled, dry_run)
+        # job_queue.put((pools[memc_addr], memc_addr, appsinstalled, options.dry))
+        pools, appsinstalled, dry_run = task
+        ok = insert_appsinstalled(pools, appsinstalled, dry_run)
         if ok:
             processed += 1
         else:
@@ -105,7 +112,8 @@ def handle_task(job_queue, result_queue):
 
 
 def parsing_file(filename: str, options):
-    appsinstalled = []
+    memc_addr = None
+    appsinstalled = None
     apps_inner = []
     errors = 0
     index = 0
@@ -122,6 +130,7 @@ def parsing_file(filename: str, options):
         apps = parse_appsinstalled(line)
         if not apps:
             errors += 1
+            logging.error(f"line {line[0:10]} cannot be processed")
             continue
 
         memc_addr = device_memc.get(apps.dev_type)
@@ -134,15 +143,16 @@ def parsing_file(filename: str, options):
         apps_inner.append(apps)
         inner_count += 1
         if inner_count > config['MAX_DATA_SIZE']:
-            appsinstalled.append(add_appsinstalled_struct(index, memc_addr, apps_inner))
+            appsinstalled = add_appsinstalled_struct(memc_addr, apps_inner)
             inner_count = 0
             apps_inner = []
             index += 1
+            yield appsinstalled, errors
 
     if apps_inner:
-        appsinstalled.append(add_appsinstalled_struct(index, memc_addr, apps_inner))
+        appsinstalled = add_appsinstalled_struct(memc_addr, apps_inner)
 
-    return appsinstalled, errors
+    yield appsinstalled, errors
 
 
 def parse_next_line(filename: str):
@@ -154,8 +164,8 @@ def parse_next_line(filename: str):
             yield line
 
 
-def add_appsinstalled_struct(index, memc_addr, appsinstalled):
-    return {index: {memc_addr: appsinstalled}}
+def add_appsinstalled_struct(memc_addr, appsinstalled):
+    return {memc_addr: appsinstalled}
 
 
 def handle_logfile(fn, options):
@@ -172,22 +182,22 @@ def handle_logfile(fn, options):
     for thread in workers:
         thread.start()
 
-    processed = 0
+    processed = errors = 0
     logging.info(f'Processing {fn}')
 
-    appsinstalled_struct, errors = parsing_file(filename=fn, options=options)
+    for (appsinstalled_struct, error) in parsing_file(filename=fn, options=options):
+        errors += error
 
-    for idx, appsinstalled in enumerate(appsinstalled_struct):
-        print(list(appsinstalled[idx].keys())[0])
-        # job_queue.put((pools[memc_addr], memc_addr, appsinstalled, options.dry))
+        job_queue.put((pools, appsinstalled_struct, options.dry))
 
         if not all(thread.is_alive() for thread in workers):
-          break
+            break
 
-    exit()
     for thread in workers:
         if thread.is_alive():
             thread.join()
+
+    exit()
 
     while not Empty:
         processed_per_worker, errors_per_worker = result_queue.get()
