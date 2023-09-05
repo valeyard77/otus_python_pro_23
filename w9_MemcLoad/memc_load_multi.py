@@ -39,39 +39,47 @@ def dot_rename(path):
 
 
 def insert_appsinstalled(pools, appsinstalled, dry_run=False):
-    ua = appsinstalled_pb2.UserApps()
-    memc_addr = list(appsinstalled.keys())[0]
-    memc_pool = pools[memc_addr]
+    for memc_addr in appsinstalled:
+        data = {}
+        ua = appsinstalled_pb2.UserApps()
 
-    key = f"%s:%s" % (appsinstalled[memc_addr][0].dev_type, appsinstalled[memc_addr][0].dev_id)
-    print(memc_addr, key)
-    return None
-    ua.lat = appsinstalled.lat
-    ua.lon = appsinstalled.lon
-    ua.apps.extend(appsinstalled.apps)
-    key = f"%s:%s" % (appsinstalled[memc_addr].dev_type, appsinstalled[memc_addr].dev_id)
-    packed = ua.SerializeToString()
-    try:
-        if dry_run:
-            logging.debug("%s - %s -> %s" % (memc_addr, key, str(ua).replace("\n", " ")))
-        else:
-            try:
-                memc = memc_pool.get(timeout=0.1)
-            except Queue:
-                memc = memcache.Client([memc_addr], socket_timeout=config['MEMC_TIMEOUT'])
-            ok = False
-            for n in range(config['MEMC_MAX_RETRIES']):
-                ok = memc.set_multi(key, packed)
-                if ok:
-                    break
-                backoff_value = config['MEMC_BACKOFF_FACTOR'] * (2 ** n)
-                time.sleep(backoff_value)
-            memc_pool.put(memc)
-            return ok
-    except Exception as e:
-        logging.exception("Cannot write to memc %s: %s" % (memc_addr, e))
-        return False
-    return True
+        memc_pool = pools[memc_addr]
+        for appsinst in appsinstalled[memc_addr]:
+            if appsinst:
+                key = f"%s:%s" % (appsinst.dev_type, appsinst.dev_id)
+                ua.lat = appsinst.lat
+                ua.lon = appsinst.lon
+                ua.apps.extend(appsinst.apps)
+                packed = ua.SerializeToString()
+                data.update({key: packed})
+
+        # return None
+        # ua.lat = appsinstalled.lat
+        # ua.lon = appsinstalled.lon
+        # ua.apps.extend(appsinstalled.apps)
+        # key = f"%s:%s" % (appsinstalled[memc_addr].dev_type, appsinstalled[memc_addr].dev_id)
+        # packed = ua.SerializeToString()
+        try:
+            if dry_run:
+                logging.debug("%s -> data length: %s (key: %s)" % (memc_addr, len(data), data))
+            else:
+                try:
+                    memc = memc_pool.get(timeout=0.1)
+                except Empty:
+                    memc = memcache.Client([memc_addr], socket_timeout=config['MEMC_TIMEOUT'])
+                ok = False
+                for n in range(config['MEMC_MAX_RETRIES']):
+                    ok = memc.set_multi(data)
+                    if ok:
+                        break
+                    backoff_value = config['MEMC_BACKOFF_FACTOR'] * (2 ** n)
+                    time.sleep(backoff_value)
+                memc_pool.put(memc)
+                return ok
+        except Exception as e:
+            logging.exception("Cannot write to memc %s: %s" % (memc_addr, e))
+            return False
+        return True
 
 
 def parse_appsinstalled(line):
@@ -196,8 +204,6 @@ def handle_logfile(fn, options):
     for thread in workers:
         if thread.is_alive():
             thread.join()
-
-    exit()
 
     while not Empty:
         processed_per_worker, errors_per_worker = result_queue.get()
