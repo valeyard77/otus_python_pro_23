@@ -1,15 +1,15 @@
-from django.conf.urls import url
+from django.urls import path
 
 from .views import (
     IndexView, SearchView, QuestionView, JsonQuestionVote, JsonAnswerVote, JsonAnswerMark, ask
 )
 
 urlpatterns = [
-    url(r'^$', IndexView.as_view(), name='index'),
-    url(r'^question/(?P<slug>[-\w\d]+),(?P<pk>\d+)/?$', QuestionView.as_view(), name='question'),
-    url(r'^question/(?P<pk>[0-9]+)/vote/?$', JsonQuestionVote.as_view(), name='question_vote'),
-    url(r'^answer/(?P<pk>[0-9]+)/vote/?$', JsonAnswerVote.as_view(), name='answer_vote'),
-    url(r'^answer/(?P<pk>[0-9]+)/mark/?$', JsonAnswerMark.as_view(), name='answer_mark'),
-    url(r'^ask/?$', ask, name='ask'),
-    url(r'^search/?$', SearchView.as_view(), name='search'),
+    path('', IndexView.as_view(), name='index'),
+    path('question/<str:slug>,<int:pk>/', QuestionView.as_view(), name='question'),
+    path('question/<int:pk>/vote/', JsonQuestionVote.as_view(), name='question_vote'),
+    path('answer/<int:pk>/vote/', JsonAnswerVote.as_view(), name='answer_vote'),
+    path('answer/<int:pk>/mark/', JsonAnswerMark.as_view(), name='answer_mark'),
+    path('ask/', ask, name='ask'),
+    path('search/', SearchView.as_view(), name='search'),
 ]

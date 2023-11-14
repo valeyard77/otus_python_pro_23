@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 from qa.models import Question, Tag
 
+
 class SearchViewTest(TestCase):
 
     def setUp(self):
@@ -54,4 +55,3 @@ class SearchViewTest(TestCase):
             set(response.context["questions"]),
             set([question1, question3])
         )
-

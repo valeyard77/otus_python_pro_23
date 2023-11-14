@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import operator
+from functools import reduce
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
-from django.utils.encoding import python_2_unicode_compatible
+from six import python_2_unicode_compatible
 from django.shortcuts import reverse
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType

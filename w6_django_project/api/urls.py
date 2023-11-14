@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from .views import (
@@ -7,27 +7,13 @@ from .views import (
 )
 
 urlpatterns = [
-    url(regex=r"^$",
-        view=IndexAPIView.as_view(),
-        name="questions"),
-    url(regex=r"^trending/$",
-        view=TrendingAPIView.as_view(),
-        name="trending"),
-    url(regex=r'^search/?$',
-        view=SearchAPIView.as_view(),
-        name="search"),
-    url(regex=r"^questions/(?P<pk>[0-9]+)/answers/$",
-        view=AnswersAPIView.as_view(),
-        name="answers"),
-    url(regex=r"^questions/(?P<pk>[0-9]+)/vote/$",
-        view=QuestionVoteAPIView.as_view(),
-        name="question_vote"),
-    url(regex=r"^answers/(?P<pk>[0-9]+)/vote/$",
-        view=AnswerVoteAPIView.as_view(),
-        name="answer_vote"),
-    url(regex=r"^login/?$",
-        view=LoginAPIView.as_view(),
-        name="login"),
+    path("", view=IndexAPIView.as_view(), name="questions"),
+    path("trending/", view=TrendingAPIView.as_view(), name="trending"),
+    path('search/', view=SearchAPIView.as_view(), name="search"),
+    path("questions/<int:pk>/answers/", view=AnswersAPIView.as_view(), name="answers"),
+    path("questions/<int:pk>/vote/", view=QuestionVoteAPIView.as_view(), name="question_vote"),
+    path("answers/<int:pk>/vote/", view=AnswerVoteAPIView.as_view(), name="answer_vote"),
+    path("login/", view=LoginAPIView.as_view(), name="login"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

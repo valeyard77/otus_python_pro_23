@@ -27,9 +27,9 @@ class IndexView(ListView):
 
     def get_queryset(self):
         order = self.request.GET.get('order')
-        queryset = Question.objects.\
-            select_related('author').\
-            prefetch_related('answers').\
+        queryset = Question.objects. \
+            select_related('author'). \
+            prefetch_related('answers'). \
             prefetch_related('tags').all()
         if order:
             queryset = queryset.order_by('-total_votes')
@@ -52,9 +52,9 @@ class SearchView(IndexView):
             else:
                 query_list = query.split()
                 queryset = Question.objects.search(query_list)
-            queryset = queryset.\
-                select_related('author').\
-                prefetch_related('answers').\
+            queryset = queryset. \
+                select_related('author'). \
+                prefetch_related('answers'). \
                 prefetch_related('tags')
         return queryset
 
@@ -67,7 +67,7 @@ def ask(request):
         question = form.save(commit=False)
         question.author = request.user
         tags_list = form.cleaned_data['tags']
-	with transaction.atomic():
+        with transaction.atomic():
             question.save(tags_list=tags_list)
         return redirect(reverse("qa:question", kwargs={
             "slug": question.slug,
@@ -86,9 +86,9 @@ class QuestionView(DetailView):
     def get_context_data(self, **kwargs):
         context_data = super(QuestionView, self).get_context_data(**kwargs)
         question = self.get_object()
-        answers = question.answers.\
-            select_related('author').\
-            select_related('author__profile').\
+        answers = question.answers. \
+            select_related('author'). \
+            select_related('author__profile'). \
             order_by('-total_votes', '-created_at')
 
         paginator = Paginator(answers, 5)
@@ -157,4 +157,3 @@ class JsonAnswerMark(LoginRequiredMixin, BaseDetailView):
         return JsonResponse({
             "mark": marked
         })
-

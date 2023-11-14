@@ -1,13 +1,11 @@
-import os
+import os.path
+
 from decouple import config
+from pathlib import Path
 
-
-def root(*dirs):
-    base_dir = os.path.join(os.path.dirname(__file__), '..', '..')
-    return os.path.abspath(os.path.join(base_dir, *dirs))
-
-
-BASE_DIR = root()
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+print(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -48,7 +46,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [root('templates')],
+        "DIRS": [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -102,7 +100,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    root('static'),
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 
